@@ -1,5 +1,5 @@
 #include "List.hpp"
-#include <iostream>
+
 List::List(){
 	List::head = NULL;
 }
@@ -18,14 +18,14 @@ string List::toString() const{
 	stringstream out;
 	
 	while(aux!=NULL){
-		out << "Arrow " << aux->getData().getId() << aux << "\n";
+		out << "Arrow " << aux->getData()->getId() << aux << "\n";
 		aux = aux->getSig();
 	}
 
 	return out.str();
 }
 
-void List::add(Arrow ar){
+void List::add(Arrow *ar){
 	if(List::head==NULL){
 		List::head = new Node(ar, NULL);
 	}
@@ -42,24 +42,19 @@ void List::add(Arrow ar){
 
 bool List::remove(int id){
 	Node *aux=List::head;
-	if(aux->getData().getId()==id){
-		cout << "cabeza" << endl;
+	if(aux->getData()->getId()==id){
 		List::head=List::head->getSig();
 		delete aux;
 		return true;
 	}
 
-	cout << "while" << endl;
 	while(aux->getSig()!=NULL){
-		cout << aux << endl;
-		if (aux->getSig()->getData().getId()==id){
-			cout << "dir a borrar " << aux << endl;
+		if (aux->getSig()->getData()->getId()==id){
 			Node *temp=aux->getSig();
 			aux->setSig(temp->getSig());
 			delete temp;
 			return true;
 		}
-		cout << "aux->sig" << aux->getSig() << endl;
 		aux=aux->getSig();
 	}
 
@@ -86,14 +81,29 @@ int List::size(){
 	return i;
 }
 
-void List::getElementAt(int pos, Arrow* ar){
-	ar=NULL;
+Arrow *List::getElementAt(int pos){
 	if (pos>=0 && pos<List::size()){
 		Node *aux=List::head;
 
 		for(int i=0; i<pos; ++i){
 			aux=aux->getSig();
 		}
-		*ar = aux->getData();
+		return aux->getData();
 	}
+	return NULL;
+}
+
+List *List::copy(){
+	if (List::head!=NULL)
+	{
+		List *l2=new List();
+		Node *aux = List::head;
+		while(aux!=NULL){
+			Arrow *a = new Arrow(aux->getData()->getId(), aux->getData()->getX(), aux->getData()->getY());
+			l2->add(a);
+			aux = aux->getSig();
+		}
+		return l2;
+	}
+	return NULL;
 }

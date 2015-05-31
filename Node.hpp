@@ -6,16 +6,16 @@
 class Node
 {
 	public:
-		Node(Arrow ar, Node *sig=NULL);
+		Node(Arrow *ar, Node *sig);
 		virtual ~Node();
 
 		void setSig(Node *sig);
-		void setData(Arrow ar);
+		void setData(Arrow *ar);
 		Node *getSig();
-		Arrow getData();
+		Arrow *getData();
 
 	private:
-		Arrow data;
+		Arrow *data;
 		Node *sig;
 };
 

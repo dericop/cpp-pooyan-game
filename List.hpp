@@ -11,12 +11,12 @@ class List
 
 		string toString() const;
 
-		void add(Arrow ar);
+		void add(Arrow *ar);
 		bool remove(int id);
 		void removeFirst();
 		int size();
-		void getElementAt(int pos, Arrow* ar);
-
+		Arrow *getElementAt(int pos);
+		List *copy();
 	private:
 		Node *head;
 };
