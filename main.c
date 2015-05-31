@@ -20,8 +20,6 @@ typedef struct
 {
 	int x;
 	int y;
-	int xFin;
-	int yFin;
 } Flecha;
 
 typedef struct
@@ -39,8 +37,6 @@ typedef struct
 	int id;
 	int x;
 	int y;
-	int xFin;
-	int yFin;
 } Globo;
 
 /*void *funPersonajes(Personaje *);
