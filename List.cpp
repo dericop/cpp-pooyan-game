@@ -93,7 +93,7 @@ Arrow *List::getElementAt(int pos){
 	return NULL;
 }
 
-List *List::copy(){
+/*List *List::copy(){
 	if (List::head!=NULL)
 	{
 		List *l2=new List();
@@ -106,4 +106,4 @@ List *List::copy(){
 		return l2;
 	}
 	return NULL;
-}
+}*/

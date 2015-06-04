@@ -1,21 +1,16 @@
 #include "Character.hpp"
 
-Character::Character(int id, int score, int x, int y, bool user, List arrows){
+Character::Character(int id, int x, int y, bool user){
 	Character::id = id;
-	Character::score = score;
-	Character::x = x;
-	Character::y = y;
+	Character::score = 0;
 	Character::user = user;
-	Character::arrows = arrows;
-}
-
-Character::Character(int id, int score, int x, int y, bool user){
-	Character::id = id;
-	Character::score = score;
-	Character::x = x;
-	Character::y = y;
-	Character::user = user;
-	Character::arrows;
+	if (!Character::tempImage.loadFromFile("./img/dragon.png", sf::IntRect(0,0,349,69)))
+    {
+        std::cout << "Problema al cargar recurso" << std::endl;
+    }
+    Character::playerSprite.setTexture(Character::tempImage);
+    Character::playerSprite.setPosition(x, y);
+    Character::arrows = new List();
 }
 
 Character::~Character(){
@@ -36,19 +31,11 @@ void Character::setScore(int score){
 	Character::score = score;
 }
 
-void Character::setX(int x){
-	Character::x = x;
-}
-
-void Character::setY(int y){
-	Character::y = y;
-}
-
 void Character::setUser(bool user){
 	Character::user = user;
 }
 
-void Character::setArrows(const List arrows){
+void Character::setArrows(List *arrows){
 	Character::arrows = arrows;
 }
 
@@ -60,15 +47,7 @@ int Character::getScore(){
 	return Character::score;
 }
 
-int Character::getX(){
-	return Character::x;
-}
-
-int Character::getY(){
-	return Character::y;
-}
-
-List Character::getArrows(){
+List *Character::getArrows(){
 	return Character::arrows;
 }
 

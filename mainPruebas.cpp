@@ -2,18 +2,24 @@
 #include <cstdlib>
 #include <string>
 #include <sstream>
-#include "Arrow.hpp"
 #include "Balloon.hpp"
-#include "Character.hpp"
+#include "Arrow.hpp"
 #include "Node.hpp"
 #include "List.hpp"
-
+#include "Character.hpp"
+//#include "CHARAC.hpp"
 using namespace std;
 
 int main(int argc, char const *argv[])
 {
+	Arrow *a = new Arrow(0,0,0);
+	Node *n = new Node(a,NULL);
 	List *l = new List();
-	for(int i =0;i<5; ++i){
+	//Arrows *ars = new Arrows(0,0,0);
+	//cout << ars->toString() << endl;
+	Character *c = new Character(0);
+
+	/*for(int i =0;i<5; ++i){
 		cout << i << endl;
 	}
 	for (int i =0;i<5; ++i){
@@ -64,5 +70,7 @@ int main(int argc, char const *argv[])
 	cout << l2->toString() << endl;
 	delete l;
 	delete l2;
+
+	//Character c(0,0,0,0);*/
 	return 0;
 }

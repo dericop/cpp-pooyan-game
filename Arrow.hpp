@@ -3,29 +3,28 @@
 
 #include <string>
 #include <sstream>
+#include <SFML/Graphics.hpp>
 
 using namespace std;
 
 class Arrow
 {
 	public:
-		Arrow();
 		Arrow(int id, int x, int y);
 		virtual ~Arrow();
 
 		string toString() const;
 
 		void setId(int id);
-		void setX(int x);
-		void setY(int y);
-		int getId();
-		int getX();
-		int getY();
 
+		int getId();
+
+		sf::Texture tempImage;
+		sf::Sprite arrowSprite;
+		sf::CircleShape shape;
 	private:
 		int id;
-		int x;
-		int y;
+
 };
 
 #endif
