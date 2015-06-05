@@ -28,17 +28,18 @@ void movMachine(Character *);
 void colisionPhantom();
 void createPhantoms();
 void initPlayers();
-void createShMem(char const *);
+void createShMem();
 bool collision(Phantom *, Arrow *);
 
 int shmid;
 Character *players[3];
-Phantom *phantoms[MAX_PHANTOMS];
+Phantom **phantoms;//[MAX_PHANTOMS];
 
 sf::RenderWindow window(sf::VideoMode(ScreenWidth,ScreenHeight), "POOYAN!");
 float velx = 0, vely = 0;
 float x = 10, y = 10, moveSpeed = 0.3;
 int sourceX = 0, sourceY = sUp;
+int flag = 0;
 
 sf::Texture txtBackground;
 sf::Sprite spBackground;
@@ -54,7 +55,7 @@ sf::Thread *thPhantoms;
 int main(int argc, char const *argv[])
 {  
     srand((unsigned)time(0));
-    //createShMem(argv[0]);
+    createShMem();
     initPlayers();
 
     thCOM1->launch();
@@ -104,9 +105,15 @@ int main(int argc, char const *argv[])
 
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
             {
-                Arrow *a = new Arrow(players[0]->getArrows()->size(), players[0]->playerSprite.getPosition().x, players[0]->playerSprite.getPosition().y);
-                a->arrowSprite.scale(-1.f,1.f);
-                players[0]->getArrows()->add(a);
+                if(flag==0){
+                    Arrow *a = new Arrow(players[0]->getArrows()->size(), players[0]->playerSprite.getPosition().x, players[0]->playerSprite.getPosition().y);
+                    a->arrowSprite.scale(-1.f,1.f);
+                    players[0]->getArrows()->add(a);
+                    flag = 1;
+                }
+                else {
+                    flag = 0;
+                }
             }
         } 
 
@@ -129,27 +136,24 @@ int main(int argc, char const *argv[])
                     }
                     ar->arrowSprite.setTextureRect(sf::IntRect(0, 0, ar->tempImage.getSize().x/2, 17));
                     for (int k = 0; k<MAX_PHANTOMS;k++){
-                        if(phantoms[k]!=NULL){// && !phantoms[k]->isCollided()){// && !ar->isCollided()){
+                        if(phantoms[k]!=NULL && !phantoms[k]->isCollided() && !ar->isCollided()){
                             if(collision(phantoms[k], ar)){
                                 /*l->remove(ar->getId());
                                 tamArrows = l->size();
                                 delete phantoms[k];*/
-                                cout << "colision" << endl;
+                                players[i]->setScore(players[i]->getScore() + 1);
+                                cout << "Jugador " << i << " puntaje " << players[i]->getScore() << endl;
                                 ar->setCollided(true);
-                                cout << ar->isCollided() << endl;
                                 phantoms[k]->setCollided(true);
                             }
+                            else if(!ar->isCollided()){                          
+                                window.draw(ar->arrowSprite);
+                            }
                         }
-                    }
-                    cout << !ar->isCollided() <<endl;
-                    if(!ar->isCollided()){
-                        window.draw(ar->arrowSprite);
                     }
                 }
             }
         }
-
-
 
         colisionPhantom();
         for (int i = 0;i<MAX_PHANTOMS;i++){
@@ -157,7 +161,6 @@ int main(int argc, char const *argv[])
                 window.draw(phantoms[i]->phantomSprite);
         }
 
-        //window.draw(spground);
         window.display();
     }
 
@@ -254,10 +257,9 @@ void initPlayers(){
     thPhantoms = new sf::Thread(&createPhantoms);
 }
 
-/*void createShMem(char const *arg){
-    cout << arg << endl;
+void createShMem(){
 
-    if((shmid=shmget(ftok("/bin/ls",'K'), ((sizeof(Phantom))*MAX_PHANTOMS), 0777))==-1){
+    if((shmid=shmget(ftok("/tmp",'K'), ((sizeof(Phantom))*MAX_PHANTOMS), 0777 | IPC_CREAT))==-1){
         perror("shmget");
         exit(-1);
     }
@@ -272,12 +274,12 @@ void initPlayers(){
     else{
         cout << "Vinculado la memoria" << endl;
     }
-}*/
+}
 
 bool collision(Phantom *p, Arrow *a){
     sf::FloatRect boundingBoxP = p->phantomSprite.getGlobalBounds();
     sf::FloatRect boundingBoxA = a->arrowSprite.getGlobalBounds();
-
+    
     if(boundingBoxP.intersects(boundingBoxA)){
         return true; 
     }
