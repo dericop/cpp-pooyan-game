@@ -1,13 +1,18 @@
-#include <SFML/Graphics.hpp>
-#include <SFML/System.hpp>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <SFML/Graphics.hpp>
+#include <SFML/System.hpp>
+#include "Phantom.hpp"
 #include "Character.hpp"
 
 #define ScreenWidth 800
 #define ScreenHeight 600
-
+#define MAX_PHANTOMS 20
 #define sDown 0
 #define sUp 0
 #define X1 600
@@ -20,37 +25,216 @@
 #define LIM_INF 460
 
 void movMachine(Character *);
+void colisionPhantom();
+void createPhantoms();
+void initPlayers();
+void createShMem(char const *);
+bool collision(Phantom *, Arrow *);
 
+int shmid;
 Character *players[3];
+Phantom *phantoms[MAX_PHANTOMS];
 
 sf::RenderWindow window(sf::VideoMode(ScreenWidth,ScreenHeight), "POOYAN!");
 float velx = 0, vely = 0;
 float x = 10, y = 10, moveSpeed = 0.3;
 int sourceX = 0, sourceY = sUp;
 
-
 sf::Texture txtBackground;
-sf::Texture tile;
-sf::Texture ground;
 sf::Sprite spBackground;
+sf::Texture txtground;
+sf::Sprite spground;
 
-sf::Sprite sprite2;
-sf::Sprite sprite3;
-sf::Sprite sprite4;
-sf::Sprite spGround;
 sf::Event event;
+sf::Thread *thCOM1;
+sf::Thread *thCOM2;
+sf::Thread *thPhantoms;
 
 
-void initTileMap(){
+int main(int argc, char const *argv[])
+{  
+    srand((unsigned)time(0));
+    //createShMem(argv[0]);
+    initPlayers();
+
+    thCOM1->launch();
+    thCOM2->launch();
+    thPhantoms->launch();
+
+    if (!txtBackground.loadFromFile("./img/bg.jpg", sf::IntRect(0,0,800,600)))
+    {
+        std::cout << "Problema al cargar recurso" << std::endl;
+    }
+
+    if (!txtground.loadFromFile("./img/groundOver.png", sf::IntRect(0,0,800,63)))
+    {
+        std::cout << "Problema al cargar recurso" << std::endl;
+    } 
     
+    spBackground.setTexture(txtBackground);
+    /*spground.setTexture(txtground);
+    spground.setPosition(0,(800-63));*/
+
+    while (window.isOpen())
+    {
+        
+        while (window.pollEvent(event))
+        {
+            if(event.type == sf::Event::Closed){
+                window.close();
+            }
+
+            if (event.key.code == sf::Keyboard::Up)
+            {
+                if(players[0]->playerSprite.getPosition().y>LIM_SUP){
+                    players[0]->playerSprite.move(0,-5);
+                    sourceY = sUp;
+                    vely = -moveSpeed;
+                }
+            }else if (event.key.code == sf::Keyboard::Down)
+            {
+                if(players[0]->playerSprite.getPosition().y<LIM_INF){
+                    players[0]->playerSprite.move(0,5);
+                    sourceY = sDown;
+                    vely = moveSpeed;
+                }
+            }else{
+                vely = 0;
+            }            
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+            {
+                Arrow *a = new Arrow(players[0]->getArrows()->size(), players[0]->playerSprite.getPosition().x, players[0]->playerSprite.getPosition().y);
+                a->arrowSprite.scale(-1.f,1.f);
+                players[0]->getArrows()->add(a);
+            }
+        } 
+
+        window.draw(spBackground);
+
+        for (int i = 0; i<3; i++){
+            players[i]->playerSprite.setTextureRect(sf::IntRect(sourceX, sourceY, sourceX+players[i]->tempImage.getSize().x/5, 69));
+            window.draw(players[i]->playerSprite); //dibuja personaje
+
+            List *l = players[i]->getArrows();
+            int tamArrows = l->size();
+            if(tamArrows>0){
+                for(int j=0;j<tamArrows;j++){
+                    Arrow *ar=l->getElementAt(j);
+                    if(i==0){
+                        ar->arrowSprite.move(-5,0);
+                    }
+                    else{
+                        ar->arrowSprite.move(5,0);
+                    }
+                    ar->arrowSprite.setTextureRect(sf::IntRect(0, 0, ar->tempImage.getSize().x/2, 17));
+                    for (int k = 0; k<MAX_PHANTOMS;k++){
+                        if(phantoms[k]!=NULL){// && !phantoms[k]->isCollided()){// && !ar->isCollided()){
+                            if(collision(phantoms[k], ar)){
+                                /*l->remove(ar->getId());
+                                tamArrows = l->size();
+                                delete phantoms[k];*/
+                                cout << "colision" << endl;
+                                ar->setCollided(true);
+                                cout << ar->isCollided() << endl;
+                                phantoms[k]->setCollided(true);
+                            }
+                        }
+                    }
+                    cout << !ar->isCollided() <<endl;
+                    if(!ar->isCollided()){
+                        window.draw(ar->arrowSprite);
+                    }
+                }
+            }
+        }
+
+
+
+        colisionPhantom();
+        for (int i = 0;i<MAX_PHANTOMS;i++){
+            if(phantoms[i]!=NULL && !phantoms[i]->isCollided())
+                window.draw(phantoms[i]->phantomSprite);
+        }
+
+        //window.draw(spground);
+        window.display();
+    }
+
+    return 0;
 }
 
+void movMachine(Character *c){
+    float tShoot = 0;
+    float tMov = 0;
+    int offset = 0;
 
-void createBalloon()
+    while (window.isOpen())
+    {
+        tMov = (rand()%3);
+        offset = (rand()%2);
+        if(tShoot<=0)
+            tShoot = (rand()%2)+2;
+
+        /*
+        * Movimiento hacia abajo
+        */
+        if(offset && (c->playerSprite.getPosition().y+(c->tempImage.getSize().y))<LIM_INF){
+            for(float i=0.f; i<tMov;i+=0.1){
+                c->playerSprite.move(0.f,5);
+                if(tShoot==0.0){
+                    Arrow *ar = new Arrow(c->getArrows()->size(), c->playerSprite.getPosition().x, c->playerSprite.getPosition().y);
+                    c->getArrows()->add(ar);
+                }
+                tShoot-=0.1;
+                sf::Time t = sf::seconds(0.1);
+                sf::sleep(t);
+            }
+        }
+
+        /*
+        * Movimiento hacia arriba
+        */
+        if(!offset && (c->playerSprite.getPosition().y-(c->tempImage.getSize().y))>LIM_SUP){
+            for(float i=0.f; i<tMov;i+=0.1){
+                c->playerSprite.move(0.f,-5);
+                if(tShoot==0.0){
+                    Arrow *ar = new Arrow(c->getArrows()->size(), c->playerSprite.getPosition().x, c->playerSprite.getPosition().y);
+                    c->getArrows()->add(ar);
+                }
+                tShoot-=0.1;
+                sf::Time t = sf::seconds(0.1);
+                sf::sleep(t);
+            }            
+        }
+    }
+}
+
+void colisionPhantom(){
+    for(int i = 0; i<MAX_PHANTOMS;i++){
+        if(phantoms[i]!=NULL){
+            if(phantoms[i]->phantomSprite.getPosition().x<phantoms[i]->getLimX()){
+                phantoms[i]->phantomSprite.move(1,0);
+            }
+            else{
+                phantoms[i]->phantomSprite.move(0,0.6);
+            }
+        }
+    }
+}
+
+void createPhantoms()
 {
-    
 
-    
+    int r;
+    float rf;
+    for(int i = 0; i<MAX_PHANTOMS; i++){
+        r = (rand()%80)+350;
+        phantoms[i] = new Phantom(i,r);
+        rf = (rand()%4)+3;
+        sf::Time t = sf::seconds(rf);
+        sf::sleep(t);
+    }
 }
 
 void initPlayers(){
@@ -61,176 +245,41 @@ void initPlayers(){
     players[1]->playerSprite.scale(-1.f, 1.f);
     players[2]->playerSprite.scale(-1.f, 1.f);
 
-    /*sf::Thread thCOM1(&movMachine, players[1]);
-    //sf::Thread thCOM2(&movMachine, &players[2]);
-    thCOM1.launch();*/
-//    thCOM2.launch();
+    for (int i = 0;i<MAX_PHANTOMS;i++){
+        phantoms[i]=NULL;
+    }
+
+    thCOM1 = new sf::Thread(&movMachine, players[1]);
+    thCOM2 = new sf::Thread(&movMachine, players[2]);
+    thPhantoms = new sf::Thread(&createPhantoms);
 }
 
-int main()
-{  
-    initPlayers();
-    
-    if (!tile.loadFromFile("./img/tile.png", sf::IntRect(0,0,50,50)))
-    {
-        std::cout << "Problema al cargar recurso" << std::endl;
+/*void createShMem(char const *arg){
+    cout << arg << endl;
 
+    if((shmid=shmget(ftok("/bin/ls",'K'), ((sizeof(Phantom))*MAX_PHANTOMS), 0777))==-1){
+        perror("shmget");
+        exit(-1);
+    }
+    else{
+        cout << "Segmento conectado" << endl;
     }
 
-    if (!txtBackground.loadFromFile("./img/bg.jpg", sf::IntRect(0,0,800,600)))
-    {
-        std::cout << "Problema al cargar recurso" << std::endl;
+    if ((*phantoms=((Phantom*)shmat(shmid, 0, 0)))!=NULL){
+        perror("shmat");
+        exit(1);
     }
-
-    if (!ground.loadFromFile("./img/tile.png", sf::IntRect(100,100,49,50)))
-    {
-        std::cout << "Problema al cargar recurso" << std::endl;
+    else{
+        cout << "Vinculado la memoria" << endl;
     }
-    
-    
-    /*sf::CircleShape shape(50.f);
-    shape.setFillColor(sf::Color::Green);
-    shape.setPosition(600,200);*/
-    
-    sprite2.setTexture(tile);
-    sprite3.setTexture(tile);
-    sprite4.setTexture(tile);
-    spGround.setTexture(ground);
-    sprite2.setPosition(400,100);
+}*/
 
-    sprite2.setPosition(200,200);
-    sprite3.setPosition(20,100);
-    sprite4.setPosition(100,130);
-    spGround.setPosition(100,130);
-    spBackground.setTexture(txtBackground);
+bool collision(Phantom *p, Arrow *a){
+    sf::FloatRect boundingBoxP = p->phantomSprite.getGlobalBounds();
+    sf::FloatRect boundingBoxA = a->arrowSprite.getGlobalBounds();
 
-    while (window.isOpen())
-    {
-        
-        while (window.pollEvent(event))
-        {
-
-            /*
-            switch (event.type)
-            {
-                // window closed
-                case sf::Event::Closed:
-                    window.close();
-                    break;
-
-                // key pressed
-                case sf::Event::KeyPressed:
-*/
-
-            if(event.type == sf::Event::Closed){
-                window.close();
-            }
-
-            if (event.key.code == sf::Keyboard::Up)
-            {
-                if(players[0]->playerSprite.getPosition().y>LIM_SUP){
-                    players[0]->playerSprite.move(0,-5);
-                    std::cout << "Moviendo" << std::endl;
-                    sourceY = sUp;
-                    vely = -moveSpeed;
-                }
-            }else if (event.key.code == sf::Keyboard::Down)
-            {
-                //if((players[0]->playerSprite.getPosition().y+players[0]->tempImage.getSize().y)<LIM_INF){
-                if(players[0]->playerSprite.getPosition().y<LIM_INF){
-                    players[0]->playerSprite.move(0,5);
-                    std::cout << "Moviendo" << std::endl;
-                    sourceY = sDown;
-                    vely = moveSpeed;
-                }
-            }else{
-                vely = 0;
-                std::cout << "do" << std::endl;
-            }
-
-            
-
-            if (event.key.code == sf::Keyboard::Space)
-            {
-                std::cout << "Plum!!" << std::endl;
-                Arrow *a = new Arrow(players[0]->getArrows()->size(), players[0]->playerSprite.getPosition().x, players[0]->playerSprite.getPosition().y);
-                players[0]->getArrows()->add(a);
-                sf::CircleShape bala(10.f);
-                bala.setFillColor(sf::Color::Black);
-                bala.setPosition(600,500);
-                window.draw(bala);
-            }
-            
-            //break;
-
-        // we don't process other types of events
-        //default:
-          //  break;
-    //}
-
-        }
-
-        sprite2.move(0,0.2);
-        sprite3.move(0,0.5);
-        sprite4.move(0,0.1);
-
-        /*x+=velx;
-        y+=vely;
-
-        std::cout << sourceX<< std::endl;
-        
-        if (vely!=0)
-        {
-            sourceX += tempImage.getSize().x/5;
-        }
-
-        if (sourceX >= tempImage.getSize().x)
-        {
-            sourceX = 0;
-            std::cout << "Nunca entro" << std::endl;
-        }*/
-
-
-        //window.clear(sf::Color::Blue);
-
-
-        
-        players[0]->playerSprite.setTextureRect(sf::IntRect(sourceX, sourceY, sourceX+players[0]->tempImage.getSize().x/5, 69));
-        players[1]->playerSprite.setTextureRect(sf::IntRect(sourceX, sourceY, sourceX+players[1]->tempImage.getSize().x/5, 69));
-        players[2]->playerSprite.setTextureRect(sf::IntRect(sourceX, sourceY, sourceX+players[2]->tempImage.getSize().x/5, 69));
-
-        //players[0]->getPlayerSprite().setPosition(x, y);
-        window.draw(spBackground);
-        //window.draw(sprite2);
-        //window.draw(sprite3);
-        //window.draw(sprite4);
-        window.draw(spGround);
-        window.draw(players[0]->playerSprite);
-        window.draw(players[1]->playerSprite);
-        window.draw(players[2]->playerSprite);
-        for(int i = 0; i<players[0]->getArrows()->size();i++){
-            Arrow *ar=players[0]->getArrows()->getElementAt(i);
-            //ar->arrowSprite.setPosition(ar->arrowSprite.getPosition().x-5,ar->arrowSprite.getPosition().y);
-            ar->shape.setPosition(ar->shape.getPosition().x-5,ar->shape.getPosition().y);
-            window.draw(ar->shape);
-        }
-        //window.draw(shape);
-        window.display();
+    if(boundingBoxP.intersects(boundingBoxA)){
+        return true; 
     }
-
-    return 0;
-}
-
-void movMachine(Character *c){
-    /*while (window.isOpen())
-    {
-        float tShoot;
-        
-        srand((unsigned)time(0));
-        float offset = (rand()%10)-5;
-        sf::Time t = sf::seconds(2.f);
-        //sf::sleep(t);
-        cout << window.isOpen() << endl;
-        
-    }*/
+    return false;
 }

@@ -16,7 +16,7 @@ class List
 		void removeFirst();
 		int size();
 		Arrow *getElementAt(int pos);
-		//List *copy();
+		List *copy();
 	private:
 		Node *head;
 };

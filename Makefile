@@ -25,14 +25,14 @@ List.o : List.cpp
 Character.o : Character.cpp
 	g++ $^ -c
 
-#List.o : List.cpp
-#	g++ $^ -c
+Phantom.o : Phantom.cpp
+	g++ $^ -c
 
-sfml-app : Arrow.o Node.o List.o Character.o
+sfml-app : Phantom.o Arrow.o Node.o List.o Character.o
 	#g++ -c $(ARGS) main.cpp
 	g++ $^ main.cpp -o sfml-app -lsfml-graphics -lsfml-window -lsfml-system
 
-mainPruebas : Arrow.o Node.o List.o Character.o
+mainPruebas : Phantom.o Arrow.o Node.o List.o Character.o
 	#g++ -c $^ mainPruebas.cpp
 	g++ $^ mainPruebas.cpp -o mainPruebas -lsfml-graphics -lsfml-window -lsfml-system
 

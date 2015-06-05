@@ -2,17 +2,13 @@
 
 Arrow::Arrow(int id, int x, int y){
 	Arrow::id = id;
-	/*if (!Arrow::tempImage.loadFromFile("./img/.png", sf::IntRect(0,0,349,69)))
+    Arrow::collided = false;
+	if (!Arrow::tempImage.loadFromFile("./img/arrow.png", sf::IntRect(0,0,97,17)))
     {
         std::cout << "Problema al cargar recurso" << std::endl;
-    }*/
-    //Arrow::arrowSprite.setTexture(Arrow::tempImage);
-    //Arrow::shape.setDiameter(10.f);
-    sf::CircleShape shape(10.f);
-    Arrow::shape = shape;
+    }
+    Arrow::arrowSprite.setTexture(Arrow::tempImage);
     Arrow::arrowSprite.setPosition(x, y);
-    Arrow::shape.setFillColor(sf::Color::Black);
-    Arrow::shape.setPosition(x,y);
 }
 
 Arrow::~Arrow(){
@@ -30,4 +26,12 @@ void Arrow::setId(int id){
 
 int Arrow::getId(){
 	return Arrow::id;
+}
+
+void Arrow::setCollided(bool collided){
+    Arrow::collided = collided;
+}
+
+bool Arrow::isCollided(){
+    return Arrow::collided;
 }
