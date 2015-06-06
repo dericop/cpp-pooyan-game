@@ -1,42 +1,48 @@
 all : pooyan
 
-DIRSRC := ./src
+DIRSRC := ./src/
 
-DIRINCLUDE := ./include
+DIRINCLUDE := ./include/
 
-DIROBJ := ./obj
+DIROBJ := ./obj/
 
-DIRBIN := ./bin
+DIRBIN := ./bin/
+
+DIRSAPP := $(DIRSRC) $(DIRINCLUDE) $(DIROBJ) $(DIRBIN)
 
 ARGS := Arrow.cpp Node.cpp List.cpp Character.cpp
 
-pooyan : Arrow.o Node.o List.o Character.o main.cpp
-	g++ $(DIROBJ)$^ -o $(DIRBIN)$@
+#pooyan : Arrow.o Node.o List.o Character.o main.cpp
+#	g++ $(DIROBJ)$^ -o $(DIRBIN)$@
 
-Arrow.o : Arrow.cpp
-	g++ $^ -c
+Arrow.o : $(DIRSRC)Arrow.cpp
+	g++ $^ -c -o $@ -I $(DIRINCLUDE)
 
-Node.o : Node.cpp
-	g++ $^ -c
+Node.o : $(DIRSRC)Node.cpp
+	g++ $^ -c -o $@ -I $(DIRINCLUDE)
 
-List.o : List.cpp
-	g++ $^ -c
+List.o : $(DIRSRC)List.cpp
+	g++ $^ -c -o $@ -I $(DIRINCLUDE)
 
-Character.o : Character.cpp
-	g++ $^ -c
+Character.o : $(DIRSRC)Character.cpp
+	g++ $^ -c -o $@ -I $(DIRINCLUDE)
 
-Phantom.o : Phantom.cpp
-	g++ $^ -c
+Phantom.o : $(DIRSRC)Phantom.cpp
+	g++ $^ -c -o $@ -I $(DIRINCLUDE)
 
-	#g++ -c $(ARGS) main.cpp
-sfml-app : Phantom.o Arrow.o Node.o List.o Character.o
-	g++ $^ main.cpp -o sfml-app -lsfml-graphics -lsfml-window -lsfml-system
+#g++ -c $(ARGS) main.cpp
+#	mkdir $(DIRSAPP)
+pooyan : Phantom.o Arrow.o Node.o List.o Character.o
+	g++ $^ $(DIRSRC)main.cpp -I $(DIRINCLUDE) -I $(DIROBJ) -o $(DIRBIN)$@ -lsfml-graphics -lsfml-window -lsfml-system -lpthread -lsfml-audio
 
-mainPruebas : Phantom.o Arrow.o Node.o List.o Character.o
-	#g++ -c $^ mainPruebas.cpp
-	g++ $^ mainPruebas.cpp -o mainPruebas -lsfml-graphics -lsfml-window -lsfml-system
+#g++ -c $^ mainPruebas.cpp
+mainPruebas : $(DIROBJ)Phantom.o $(DIROBJ)Arrow.o $(DIROBJ)Node.o $(DIROBJ)List.o $(DIROBJ)Character.o
+	g++ $^ $(DIRSRC)main.cpp -I $(DIRINCLUDE) -o $(DIRBIN)$@ -lsfml-graphics -lsfml-window -lsfml-system -lpthread -lsfml-audio
 
-PHONY : clear
+PHONY : open clear
+
+open : 
+	./bin/pooyan
 
 clear :
-	$(RM) sfml-app mainPruebas
+	$(RM) $(DIRBIN)*
