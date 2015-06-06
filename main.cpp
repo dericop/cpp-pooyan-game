@@ -28,7 +28,7 @@ void movMachine(Character *);
 void colisionPhantom();
 void createPhantoms();
 void initPlayers();
-void createShMem();
+void createShMem(const char* arg);
 bool collision(Phantom *, Arrow *);
 
 int shmid;
@@ -52,10 +52,9 @@ sf::Thread *thCOM2;
 sf::Thread *thPhantoms;
 
 
-int main(int argc, char const *argv[])
-{  
+int main(int argc, char const *argv[]){  
     srand((unsigned)time(0));
-    createShMem();
+    createShMem(argv[0]);
     initPlayers();
 
     thCOM1->launch();
@@ -226,9 +225,7 @@ void colisionPhantom(){
     }
 }
 
-void createPhantoms()
-{
-
+void createPhantoms(){
     int r;
     float rf;
     for(int i = 0; i<MAX_PHANTOMS; i++){
@@ -257,17 +254,17 @@ void initPlayers(){
     thPhantoms = new sf::Thread(&createPhantoms);
 }
 
-void createShMem(){
-
-    if((shmid=shmget(ftok("/tmp",'K'), ((sizeof(Phantom))*MAX_PHANTOMS), 0777 | IPC_CREAT))==-1){
+void createShMem(const char* arg){
+    if((shmid=shmget(ftok(arg,'K'), ((sizeof(Phantom*))*MAX_PHANTOMS), 0777 | IPC_CREAT))==-1){
         perror("shmget");
         exit(-1);
     }
     else{
-        cout << "Segmento conectado" << endl;
+        cout << "Segmento creado" << endl;
     }
 
-    if ((*phantoms=((Phantom*)shmat(shmid, 0, 0)))!=NULL){
+    if ((phantoms=((Phantom**)shmat(shmid, 0, 0)))==NULL){
+        shmctl(shmid, IPC_RMID, 0);
         perror("shmat");
         exit(1);
     }
