@@ -204,17 +204,19 @@ int main(int argc, char const *argv[]){
                     if(arrows[j].getId()==i){
                         arrows[j].arrowSprite.move(5,0);
                         arrows[j].arrowSprite.setTextureRect(sf::IntRect(0, 0, arrows[j].tempImage.getSize().x/2, 17));
-                        if(phantoms[j]!=NULL && !phantoms[j]->isCollided() && !arrows[j].isCollided() && collision(phantoms[j], &arrows[j])){
-                            players[i]->setScore(players[i]->getScore() + 1);
-                            cout << "Jugador " << i << " puntaje " << players[i]->getScore() << endl;
-                            stringstream sstm;
-                            sstm << "Score m"<< i << " : " << players[i]->getScore() << endl;
-                            if(i==1)
-                                gScoreUs1.setString(sstm.str());
-                            else
-                                gScoreUs2.setString(sstm.str());
-                            arrows[j].setCollided(true);
-                            phantoms[j]->setCollided(true);
+                        if(phantoms[j]!=NULL && !phantoms[j]->isCollided() && !arrows[j].isCollided()){
+                            if(collision(phantoms[j], &arrows[j])){
+                                players[i]->setScore(players[i]->getScore() + 1);
+                                cout << "Jugador " << i << " puntaje " << players[i]->getScore() << endl;
+                                stringstream sstm;
+                                sstm << "Score m"<< i << " : " << players[i]->getScore() << endl;
+                                if(i==1)
+                                    gScoreUs1.setString(sstm.str());
+                                else
+                                    gScoreUs2.setString(sstm.str());
+                                arrows[j].setCollided(true);
+                                phantoms[j]->setCollided(true);
+                            }
                         }
                         if(!arrows[j].isCollided()){
                             window.draw(arrows[j].arrowSprite);
@@ -273,7 +275,7 @@ void movMachine(Character *c){
             shoot(c);
             tShoot[c->getId()-1] = -2;
         }
-        tShoot[c->getId()-1]-=0.1;
+        tShoot[c->getId()-1]-=0.5;
         /*
         * Movimiento hacia abajo
         */
