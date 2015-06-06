@@ -11,6 +11,7 @@ using namespace std;
 class Arrow
 {
 	public:
+		Arrow();
 		Arrow(int id, int x, int y);
 		virtual ~Arrow();
 

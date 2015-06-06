@@ -28,8 +28,8 @@ Character.o : Character.cpp
 Phantom.o : Phantom.cpp
 	g++ $^ -c
 
-sfml-app : Phantom.o Arrow.o Node.o List.o Character.o
 	#g++ -c $(ARGS) main.cpp
+sfml-app : Phantom.o Arrow.o Node.o List.o Character.o
 	g++ $^ main.cpp -o sfml-app -lsfml-graphics -lsfml-window -lsfml-system
 
 mainPruebas : Phantom.o Arrow.o Node.o List.o Character.o

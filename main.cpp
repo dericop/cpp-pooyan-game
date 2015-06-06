@@ -9,7 +9,6 @@
 #include <SFML/System.hpp>
 #include "Phantom.hpp"
 #include "Character.hpp"
-#include <math.h>
 
 #define ScreenWidth 800
 #define ScreenHeight 600
@@ -36,6 +35,7 @@ void freeShMem();
 int shmid;
 Character *players[3];
 Phantom **phantoms;//[MAX_PHANTOMS];
+Arrow arrows[MAX_PHANTOMS];
 
 sf::RenderWindow window(sf::VideoMode(ScreenWidth,ScreenHeight), "POOYAN!");
 float velx = 0, vely = 0;
@@ -52,15 +52,16 @@ sf::Event event;
 sf::Thread *thCOM1;
 sf::Thread *thCOM2;
 sf::Thread *thPhantoms;
+sf::Mutex mutex;
 
 
-int main(int argc, char const *argv[]){  
+int main(int argc, char const *argv[]){
     srand((unsigned)time(0));
     createShMem(argv[0]);
     initPlayers();
 
     thCOM1->launch();
-    thCOM2->launch();
+    //thCOM2->launch();
     thPhantoms->launch();
 
     if (!txtBackground.loadFromFile("./img/bg.jpg", sf::IntRect(0,0,800,600)))
@@ -125,32 +126,50 @@ int main(int argc, char const *argv[]){
             players[i]->playerSprite.setTextureRect(sf::IntRect(sourceX, sourceY, sourceX+players[i]->tempImage.getSize().x/5, 69));
             window.draw(players[i]->playerSprite); //dibuja personaje
 
-            List *l = players[i]->getArrows();
-            int tamArrows = l->size();
-            if(tamArrows>0){
-                for(int j=0;j<tamArrows;j++){
-                    Arrow *ar=l->getElementAt(j);
-                    if(i==0){
+            if(i==0){
+                List *l = players[i]->getArrows();
+                int tamArrows = l->size();
+                if(tamArrows>0){
+                    for(int j=0;j<tamArrows;j++){
+                        Arrow *ar=l->getElementAt(j);
                         ar->arrowSprite.move(-5,0);
-                    }
-                    else{
-                        ar->arrowSprite.move(5,0);
-                    }
-                    ar->arrowSprite.setTextureRect(sf::IntRect(0, 0, ar->tempImage.getSize().x/2, 17));
-                    for (int k = 0; k<MAX_PHANTOMS;k++){
-                        if(phantoms[k]!=NULL && !phantoms[k]->isCollided() && !ar->isCollided()){
-                            if(collision(phantoms[k], ar)){
-                                /*l->remove(ar->getId());
-                                tamArrows = l->size();
-                                delete phantoms[k];*/
-                                players[i]->setScore(players[i]->getScore() + 1);
-                                cout << "Jugador " << i << " puntaje " << players[i]->getScore() << endl;
-                                ar->setCollided(true);
-                                phantoms[k]->setCollided(true);
+                        
+                        /*else{
+                            ar->arrowSprite.move(5,0);
+                        }*/
+                        ar->arrowSprite.setTextureRect(sf::IntRect(0, 0, ar->tempImage.getSize().x/2, 17));
+                        for (int k = 0; k<MAX_PHANTOMS;k++){
+                            if(phantoms[k]!=NULL && !phantoms[k]->isCollided() && !ar->isCollided()){
+                                if(collision(phantoms[k], ar)){
+                                    /*l->remove(ar->getId());
+                                    tamArrows = l->size();
+                                    delete phantoms[k];*/
+                                    players[i]->setScore(players[i]->getScore() + 1);
+                                    cout << "Jugador " << i << " puntaje " << players[i]->getScore() << endl;
+                                    ar->setCollided(true);
+                                    phantoms[k]->setCollided(true);
+                                }
+                                else if(!ar->isCollided()){                          
+                                    window.draw(ar->arrowSprite);
+                                }
                             }
-                            else if(!ar->isCollided()){                          
-                                window.draw(ar->arrowSprite);
-                            }
+                        }
+                    }
+                }
+            }
+            else{
+                for (int j = 0;j<MAX_PHANTOMS;j++){
+                    if(arrows[j].getId()==i){
+                        arrows[j].arrowSprite.move(5,0);
+                        arrows[j].arrowSprite.setTextureRect(sf::IntRect(0, 0, arrows[j].tempImage.getSize().x/2, 17));
+                        if(phantoms[j]!=NULL && !phantoms[j]->isCollided() && !arrows[j].isCollided() && collision(phantoms[j], &arrows[j])){
+                            players[i]->setScore(players[i]->getScore() + 1);
+                            cout << "Jugador " << i << " puntaje " << players[i]->getScore() << endl;
+                            arrows[j].setCollided(true);
+                            phantoms[j]->setCollided(true);
+                        }
+                        if(!arrows[j].isCollided()){
+                            window.draw(arrows[j].arrowSprite);
                         }
                     }
                 }
@@ -171,7 +190,7 @@ int main(int argc, char const *argv[]){
 }
 
 void movMachine(Character *c){
-    float tShoot = -1.f;
+    float tShoot = -2.f;
     float tMov = 0;
     int offset = 0;
 
@@ -180,17 +199,31 @@ void movMachine(Character *c){
         tMov = (rand()%3);
         offset = (rand()%2);
 
-        /*if(tShoot<0){
+        if(c->getId()==1){
+            cout << "Personaje " << c->getId() << " | tshot-> " << tShoot << endl;
+            fflush(stdout);
+        }
+        if(tShoot<-1){
             tShoot = (rand()%2)+2;
         }
-        else if(roundf(tShoot)==0.0){
-            Arrow *ar = new Arrow(c->getArrows()->size(), c->playerSprite.getPosition().x, c->playerSprite.getPosition().y);
-            c->getArrows()->add(ar);
-            cout << "Personaje " << c->getId() << " | size-> " << c->getArrows()->size() << endl;
+        else if(tShoot>=-1 && tShoot<=0.0){
+            //cout << "Personaje " << c->getId() << " | size-> " << c->getArrows()->size() << endl;
+            //Arrow *ar = new Arrow(c->getArrows()->size(), c->playerSprite.getPosition().x, c->playerSprite.getPosition().y);
+            //cout << ar->getId() << endl;
+            //c->getArrows()->add(ar);
+            //c->getArrows()->add(new Arrow(c->getArrows()->size(), c->playerSprite.getPosition().x, c->playerSprite.getPosition().y));
+            //cout << "Personaje " << c->getId() << " | size-> " << c->getArrows()->size() << endl;
+            for(int i=0;i<MAX_PHANTOMS;i++){
+                cout << "aquie" << endl;
+                if(arrows[i].getId()==0){
+                    arrows[i].setId(c->getId());
+                    arrows[i].arrowSprite.setPosition(c->playerSprite.getPosition().x, c->playerSprite.getPosition().y);
+                    break;
+                }
+            }
+            tShoot = -2;
         }
         tShoot-=0.1;
-        if(c->getId()==1)
-            cout << "Personaje " << c->getId() << " | tshot-> " << tShoot << endl;*/
         /*
         * Movimiento hacia abajo
         */
@@ -250,6 +283,7 @@ void initPlayers(){
 
     for (int i = 0;i<MAX_PHANTOMS;i++){
         phantoms[i]=NULL;
+
     }
 
     thCOM1 = new sf::Thread(&movMachine, players[1]);
