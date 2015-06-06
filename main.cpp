@@ -9,6 +9,7 @@
 #include <SFML/System.hpp>
 #include "Phantom.hpp"
 #include "Character.hpp"
+#include <math.h>
 
 #define ScreenWidth 800
 #define ScreenHeight 600
@@ -30,6 +31,7 @@ void createPhantoms();
 void initPlayers();
 void createShMem(const char* arg);
 bool collision(Phantom *, Arrow *);
+void freeShMem();
 
 int shmid;
 Character *players[3];
@@ -75,13 +77,11 @@ int main(int argc, char const *argv[]){
     /*spground.setTexture(txtground);
     spground.setPosition(0,(800-63));*/
 
-    while (window.isOpen())
-    {
-        
-        while (window.pollEvent(event))
-        {
+    while (window.isOpen()){
+        while (window.pollEvent(event)){
             if(event.type == sf::Event::Closed){
                 window.close();
+                break;
             }
 
             if (event.key.code == sf::Keyboard::Up)
@@ -91,19 +91,19 @@ int main(int argc, char const *argv[]){
                     sourceY = sUp;
                     vely = -moveSpeed;
                 }
-            }else if (event.key.code == sf::Keyboard::Down)
-            {
+            }
+            else if (event.key.code == sf::Keyboard::Down){
                 if(players[0]->playerSprite.getPosition().y<LIM_INF){
                     players[0]->playerSprite.move(0,5);
                     sourceY = sDown;
                     vely = moveSpeed;
                 }
-            }else{
+            }
+            else{
                 vely = 0;
             }            
 
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
-            {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)){
                 if(flag==0){
                     Arrow *a = new Arrow(players[0]->getArrows()->size(), players[0]->playerSprite.getPosition().x, players[0]->playerSprite.getPosition().y);
                     a->arrowSprite.scale(-1.f,1.f);
@@ -115,6 +115,9 @@ int main(int argc, char const *argv[]){
                 }
             }
         } 
+
+        if(!window.isOpen())
+            break;
 
         window.draw(spBackground);
 
@@ -163,11 +166,12 @@ int main(int argc, char const *argv[]){
         window.display();
     }
 
+    freeShMem();
     return 0;
 }
 
 void movMachine(Character *c){
-    float tShoot = 0;
+    float tShoot = -1.f;
     float tMov = 0;
     int offset = 0;
 
@@ -175,20 +179,24 @@ void movMachine(Character *c){
     {
         tMov = (rand()%3);
         offset = (rand()%2);
-        if(tShoot<=0)
-            tShoot = (rand()%2)+2;
 
+        /*if(tShoot<0){
+            tShoot = (rand()%2)+2;
+        }
+        else if(roundf(tShoot)==0.0){
+            Arrow *ar = new Arrow(c->getArrows()->size(), c->playerSprite.getPosition().x, c->playerSprite.getPosition().y);
+            c->getArrows()->add(ar);
+            cout << "Personaje " << c->getId() << " | size-> " << c->getArrows()->size() << endl;
+        }
+        tShoot-=0.1;
+        if(c->getId()==1)
+            cout << "Personaje " << c->getId() << " | tshot-> " << tShoot << endl;*/
         /*
         * Movimiento hacia abajo
         */
         if(offset && (c->playerSprite.getPosition().y+(c->tempImage.getSize().y))<LIM_INF){
             for(float i=0.f; i<tMov;i+=0.1){
                 c->playerSprite.move(0.f,5);
-                if(tShoot==0.0){
-                    Arrow *ar = new Arrow(c->getArrows()->size(), c->playerSprite.getPosition().x, c->playerSprite.getPosition().y);
-                    c->getArrows()->add(ar);
-                }
-                tShoot-=0.1;
                 sf::Time t = sf::seconds(0.1);
                 sf::sleep(t);
             }
@@ -200,11 +208,6 @@ void movMachine(Character *c){
         if(!offset && (c->playerSprite.getPosition().y-(c->tempImage.getSize().y))>LIM_SUP){
             for(float i=0.f; i<tMov;i+=0.1){
                 c->playerSprite.move(0.f,-5);
-                if(tShoot==0.0){
-                    Arrow *ar = new Arrow(c->getArrows()->size(), c->playerSprite.getPosition().x, c->playerSprite.getPosition().y);
-                    c->getArrows()->add(ar);
-                }
-                tShoot-=0.1;
                 sf::Time t = sf::seconds(0.1);
                 sf::sleep(t);
             }            
@@ -269,7 +272,7 @@ void createShMem(const char* arg){
         exit(1);
     }
     else{
-        cout << "Vinculado la memoria" << endl;
+        cout << "Vinculado a la memoria" << endl;
     }
 }
 
@@ -281,4 +284,10 @@ bool collision(Phantom *p, Arrow *a){
         return true; 
     }
     return false;
+}
+
+void freeShMem(){
+    shmdt(phantoms);
+    shmctl(shmid, IPC_RMID, 0);
+    cout << "Memoria liberada" << endl;
 }
