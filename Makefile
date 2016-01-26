@@ -33,7 +33,7 @@ $(DIROBJ)Phantom.o : $(DIRSRC)Phantom.cpp
 #g++ -c $(ARGS) main.cpp
 #	mkdir $(DIRSAPP)
 pooyan : $(DIROBJ)Arrow.o $(DIROBJ)Node.o $(DIROBJ)List.o $(DIROBJ)Character.o $(DIROBJ)Phantom.o
-	g++ $^ $(DIRSRC)main.cpp -o -lsfml-graphics -lsfml-window -lsfml-system -lpthread -lsfml-audio
+	g++ $^ $(DIRSRC)main.cpp -o $(DIRBIN)$@ -I $(DIRINCLUDE) -lsfml-graphics -lsfml-window -lsfml-system -lpthread -lsfml-audio
 
 #g++ -c $^ mainPruebas.cpp
 mainPruebas : $(DIROBJ)Arrow.o $(DIROBJ)Node.o $(DIROBJ)List.o $(DIROBJ)Character.o $(DIROBJ)Phantom.o
